@@ -1,7 +1,7 @@
 ---
 services:
   freqtrade:
-    image: freqtradeorg/freqtrade:stable
+    image: ghcr.io/sww-echo/freqtrade:latest
     # image: freqtradeorg/freqtrade:develop
     # Use plotting image
     # image: freqtradeorg/freqtrade:develop_plot
@@ -31,6 +31,6 @@ services:
     command: >
       trade
       --logfile /freqtrade/user_data/logs/freqtrade.log
-      --db-url sqlite:////freqtrade/user_data/tradesv3.sqlite
+      --db-url sqlite:////freqtrade/user_data/tradesv3.dryrun.sqlite
       --config /freqtrade/user_data/config.json
       --strategy SampleStrategy
