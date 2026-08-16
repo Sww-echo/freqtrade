@@ -18,6 +18,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     ForceEnterPayload,
     ForceEnterResponse,
     ForceExitPayload,
+    LeveragePayload,
     ListCustomData,
     Locks,
     LocksPayload,
@@ -339,6 +340,14 @@ def pause(rpc: RPC = Depends(get_rpc)):
 @router.post("/reload_config", response_model=StatusMsg, tags=["Bot-control"])
 def reload_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_reload_config()
+
+
+@router.post("/leverage", response_model=StatusMsg, tags=["Bot-control"])
+def set_leverage(payload: LeveragePayload, rpc: RPC = Depends(get_rpc)):
+    try:
+        return rpc._rpc_set_leverage(payload.leverage)
+    except RPCException as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/pair_candles", response_model=PairHistory, tags=["Candle data"])

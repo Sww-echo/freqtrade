@@ -93,10 +93,25 @@ def validate_config_consistency(conf: dict[str, Any], *, preliminary: bool = Fal
     validate_migrated_strategy_settings(conf)
     _validate_orderflow(conf)
     _validate_demo_trading(conf)
+    _validate_leverage(conf)
 
     # validate configuration before returning
     logger.info("Validating configuration ...")
     validate_config_schema(conf, preliminary=preliminary)
+
+
+def _validate_leverage(conf: dict[str, Any]) -> None:
+    """Validate the optional global leverage override."""
+    leverage = conf.get("leverage")
+    if leverage is None:
+        return
+    if leverage < 1.0:
+        raise ConfigurationError("`leverage` must be greater than or equal to 1.0.")
+    if (
+        conf.get("trading_mode", TradingMode.SPOT) != TradingMode.FUTURES
+        and leverage != 1.0
+    ):
+        raise ConfigurationError("`leverage` above 1.0 is only available in futures mode.")
 
 
 def _validate_unlimited_amount(conf: dict[str, Any]) -> None:

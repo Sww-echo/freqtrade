@@ -35,6 +35,10 @@ class StatusMsg(BaseModel):
     status: str
 
 
+class LeveragePayload(BaseModel):
+    leverage: float = Field(ge=1.0)
+
+
 class BgJobStarted(StatusMsg):
     job_id: str
 
@@ -235,6 +239,7 @@ class ShowConfig(BaseModel):
     dry_run: bool
     trading_mode: str
     margin_mode: str
+    leverage: float = 1.0
     short_allowed: bool
     stake_currency: str
     stake_amount: str

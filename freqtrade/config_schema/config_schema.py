@@ -205,6 +205,11 @@ CONF_SCHEMA = {
             "type": "string",
             "enum": MARGIN_MODES,
         },
+        "leverage": {
+            "description": "Global leverage for new futures trades.",
+            "type": "number",
+            "minimum": 1.0,
+        },
         "reduce_df_footprint": {
             "description": "Reduce DataFrame footprint by casting columns to float32/int32.",
             "type": "boolean",

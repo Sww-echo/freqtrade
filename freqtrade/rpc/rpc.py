@@ -147,6 +147,7 @@ class RPC:
             "dry_run": config["dry_run"],
             "trading_mode": config.get("trading_mode", "spot"),
             "margin_mode": config.get("margin_mode", ""),
+            "leverage": float(config.get("leverage", 1.0)),
             "short_allowed": config.get("trading_mode", "spot") != "spot",
             "stake_currency": config["stake_currency"],
             "stake_currency_decimals": decimals_per_coin(config["stake_currency"]),
@@ -987,6 +988,16 @@ class RPC:
         """Handler for reload_config."""
         self._freqtrade.state = State.RELOAD_CONFIG
         return {"status": "Reloading config ..."}
+
+    def _rpc_set_leverage(self, leverage: float) -> dict[str, str | float]:
+        """Set the global leverage for new futures entries."""
+        if self._freqtrade.config.get("trading_mode", TradingMode.SPOT) != TradingMode.FUTURES:
+            raise RPCException("Global leverage is only available in futures mode.")
+        self._freqtrade.config["leverage"] = float(leverage)
+        return {
+            "status": f"Global leverage set to {leverage:g}x for new entries.",
+            "leverage": float(leverage),
+        }
 
     def _rpc_pause(self) -> dict[str, str]:
         """

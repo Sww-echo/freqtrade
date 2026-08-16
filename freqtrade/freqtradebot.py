@@ -1160,6 +1160,8 @@ class FreqtradeBot(LoggingMixin):
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
             if leverage_:
                 leverage = leverage_
+            elif self.config.get("leverage") is not None:
+                leverage = float(self.config["leverage"])
             else:
                 leverage = strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
                     pair=pair,
