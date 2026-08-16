@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - codex/crypto-trend-strategy
   workflow_dispatch:
 
 permissions:
