@@ -39,8 +39,16 @@ class LeveragePayload(BaseModel):
     leverage: float = Field(ge=1.0)
 
 
+class LeverageResponse(StatusMsg):
+    leverage: float
+
+
 class ShortEnabledPayload(BaseModel):
     enabled: bool
+
+
+class ShortEnabledResponse(StatusMsg):
+    short_enabled: bool
 
 
 class BgJobStarted(StatusMsg):

@@ -1,4 +1,5 @@
 import logging
+import math
 from collections import Counter
 from copy import deepcopy
 from typing import Any
@@ -105,6 +106,10 @@ def _validate_leverage(conf: dict[str, Any]) -> None:
     leverage = conf.get("leverage")
     if leverage is None:
         return
+    if not isinstance(leverage, (int, float)) or isinstance(leverage, bool):
+        return
+    if not math.isfinite(leverage):
+        raise ConfigurationError("`leverage` must be a finite number.")
     if leverage < 1.0:
         raise ConfigurationError("`leverage` must be greater than or equal to 1.0.")
     if (

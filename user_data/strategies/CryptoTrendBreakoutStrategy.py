@@ -9,7 +9,9 @@ from pandas import DataFrame
 
 import talib.abstract as ta
 
-from freqtrade.strategy import IStrategy, informative
+from freqtrade.enums import TradingMode
+from freqtrade.exceptions import OperationalException
+from freqtrade.strategy import IStrategy, informative, merge_informative_pair
 from technical import qtpylib
 
 
@@ -79,12 +81,12 @@ class CryptoTrendBreakoutStrategy(IStrategy):
         dataframe["ema20_slope"] = dataframe["ema20"].pct_change(5)
         return dataframe
 
-    @informative("1h", "BTC/{stake}", fmt="btc_{column}_{timeframe}")
-    def populate_indicators_btc_1h(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        """BTC regime filter, replacing the stock-market-wide environment score."""
-        dataframe["ema20"] = ta.EMA(dataframe, timeperiod=20)
-        dataframe["ema60"] = ta.EMA(dataframe, timeperiod=60)
-        return dataframe
+    def informative_pairs(self):
+        """Cache BTC 1h candles using the correct spot/futures pair notation."""
+        stake = self.config["stake_currency"]
+        if self.config.get("trading_mode", TradingMode.SPOT) == TradingMode.FUTURES:
+            return [(f"BTC/{stake}:{stake}", "1h", "futures")]
+        return [(f"BTC/{stake}", "1h", "spot")]
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         """Create only indicators used by the entry and exit rules."""
@@ -104,6 +106,26 @@ class CryptoTrendBreakoutStrategy(IStrategy):
 
         dataframe["obv"] = ta.OBV(dataframe)
         dataframe["obv_ema"] = ta.EMA(dataframe["obv"], timeperiod=12)
+
+        stake = self.config["stake_currency"]
+        is_futures = self.config.get("trading_mode", TradingMode.SPOT) == TradingMode.FUTURES
+        btc_pair = f"BTC/{stake}:{stake}" if is_futures else f"BTC/{stake}"
+        btc_candle_type = "futures" if is_futures else "spot"
+        btc_dataframe = self.dp.get_pair_dataframe(btc_pair, "1h", btc_candle_type)
+        if btc_dataframe.empty:
+            raise OperationalException(
+                f"No 1h BTC informative data available for {btc_pair}."
+            )
+        btc_dataframe["btc_close"] = btc_dataframe["close"]
+        btc_dataframe["btc_ema20"] = ta.EMA(btc_dataframe, timeperiod=20)
+        btc_dataframe["btc_ema60"] = ta.EMA(btc_dataframe, timeperiod=60)
+        dataframe = merge_informative_pair(
+            dataframe,
+            btc_dataframe[["date", "btc_close", "btc_ema20", "btc_ema60"]],
+            self.timeframe,
+            "1h",
+            ffill=True,
+        )
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:

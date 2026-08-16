@@ -208,6 +208,15 @@ freqtrade backtesting --config user_data/config.json \
 --strategy CryptoTrendBreakoutLongShortStrategy
 ```
 
+合约模式必须使用带结算币的交易对，并下载 futures K 线：
+
+```bash
+freqtrade download-data --exchange binance --trading-mode futures --timeframes 5m 1h \
+  --pairs BTC/USDT:USDT ETH/USDT:USDT SOL/USDT:USDT
+freqtrade backtesting --config user_data/config.json \
+  --strategy CryptoTrendBreakoutLongShortStrategy --timerange 20240101-
+```
+
 ## 8. 授权与风险说明
 
 所审阅的发行版带有机器绑定许可证和付费软件提示，且未附明确的源代码再分发许可。因而本仓库的策略没有复制其受保护代码、许可证逻辑或数据接口；只采用了均线、OBV、唐奇安通道等公开交易概念并进行了独立实现。若未来希望直接复用原项目的专有源码、名称或商业数据源，应先取得著作权人明确的书面授权。
