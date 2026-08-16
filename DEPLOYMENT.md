@@ -8,7 +8,7 @@
 
 | 项目 | GitHub 发布分支 | GHCR 镜像 |
 | --- | --- | --- |
-| 前端 Frequi | `main` | `ghcr.io/sww-echo/frequi:latest` |
+| 前端 Frequi | `develop` | `ghcr.io/sww-echo/frequi:develop` |
 | 后端 Freqtrade | `develop` | `ghcr.io/sww-echo/freqtrade:latest` |
 
 合并到对应分支后，GitHub Actions 会自动构建并推送镜像。只有镜像发布工作流显示成功后，才在服务器执行更新。
@@ -36,7 +36,7 @@ docker compose ps
 1. 本地修改代码并提交。
 2. 创建或更新 PR。
 3. 等待检查通过。
-4. 前端 PR 合并到 `main`；后端 PR 合并到 `develop`。
+4. 前端 PR 合并到 `develop`；后端 PR 合并到 `develop`。
 5. 等待 `Publish ... Image` 工作流成功。
 6. SSH 登录服务器，分别执行：
 
