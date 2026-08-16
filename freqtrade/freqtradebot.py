@@ -7,7 +7,7 @@ import traceback
 from copy import deepcopy
 from datetime import UTC, datetime, time, timedelta
 from math import isclose
-from threading import Lock
+from threading import Lock, RLock
 from time import sleep
 from typing import Any
 
@@ -86,6 +86,8 @@ class FreqtradeBot(LoggingMixin):
 
         # Init bot state
         self.state = State.STOPPED
+        # Shared with runtime profile changes so a switch cannot race an entry.
+        self._entry_lock = RLock()
 
         # Init objects
         self.config = config
@@ -302,9 +304,13 @@ class FreqtradeBot(LoggingMixin):
             with self._exit_lock:
                 self.process_open_trade_positions()
 
-        # Then looking for entry opportunities
-        if self.state == State.RUNNING and ((free_trade_slots := self.get_free_open_trades()) > 0):
-            self.enter_positions(free_trade_slots)
+        # Then looking for entry opportunities.  Runtime profile changes acquire
+        # this lock before stopping the bot, which establishes an entry barrier.
+        with self._entry_lock:
+            if self.state == State.RUNNING and (
+                (free_trade_slots := self.get_free_open_trades()) > 0
+            ):
+                self.enter_positions(free_trade_slots)
         self._schedule.run_pending()
         Trade.commit()
         self.rpc.process_msg_queue(self.dataprovider._msg_queue)

@@ -18,6 +18,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     Ping,
     PlotConfig,
     ShowConfig,
+    StrategyProfile,
     StrategyResponse,
     SysInfo,
     Version,
@@ -29,6 +30,7 @@ from freqtrade.rpc.api_server.deps import (
     get_rpc_optional,
     verify_strategy,
 )
+from freqtrade.rpc.api_server.strategy_profiles import list_strategy_profiles
 from freqtrade.rpc.rpc import RPCException
 
 
@@ -93,6 +95,12 @@ def ping():
 def version():
     """Bot Version info"""
     return {"version": __version__}
+
+
+@router.get("/strategy_profiles", response_model=list[StrategyProfile], tags=["Strategy"])
+def strategy_profiles(config=Depends(get_config)):
+    """List approved strategy profiles in both trading and Webserver modes."""
+    return list_strategy_profiles(config)
 
 
 @router.get("/show_config", response_model=ShowConfig, tags=["Info"])

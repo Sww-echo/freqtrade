@@ -21,8 +21,6 @@ from freqtrade.rpc.api_server.api_schemas import (
     LeveragePayload,
     LeverageResponse,
     ListCustomData,
-    ShortEnabledPayload,
-    ShortEnabledResponse,
     Locks,
     LocksPayload,
     MixTag,
@@ -33,12 +31,22 @@ from freqtrade.rpc.api_server.api_schemas import (
     Profit,
     ProfitAll,
     ResultMsg,
+    RuntimeSettings,
+    ShortEnabledPayload,
+    ShortEnabledResponse,
     Stats,
     StatusMsg,
+    StrategyProfilePayload,
+    StrategyProfilePreview,
     WalletHistoryResponse,
     WhitelistResponse,
 )
 from freqtrade.rpc.api_server.deps import get_config, get_rpc
+from freqtrade.rpc.api_server.strategy_profiles import (
+    apply_runtime_settings,
+    current_runtime_settings,
+    preview_runtime_settings,
+)
 from freqtrade.rpc.rpc import RPCException
 
 

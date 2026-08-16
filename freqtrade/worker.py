@@ -214,18 +214,34 @@ class Worker:
     def _reconfigure(self) -> None:
         """
         Cleans up current freqtradebot instance, reloads the configuration and
-        replaces it with the new instance
+        replaces it with the new instance.  Runtime profile changes carry an
+        atomic backup so a failed asynchronous reconfigure can be rolled back.
         """
+        from freqtrade.rpc.api_server.strategy_profiles import (
+            mark_runtime_reload_success,
+            rollback_runtime_reload,
+        )
+
         # Tell systemd that we initiated reconfiguration
         self._notify("RELOADING=1")
 
         # Clean up current freqtrade modules
         self.freqtrade.cleanup()
 
-        # Load and validate config and create new instance of the bot
-        self._init(True)
-
-        self.freqtrade.notify_status(f"{State(self.freqtrade.state)} after config reloaded")
+        try:
+            # Load and validate config and create new instance of the bot
+            self._init(True)
+        except Exception as exc:
+            if not rollback_runtime_reload(exc):
+                raise
+            logger.exception("Runtime profile reload failed; restoring the previous profile")
+            # The previous profile was restored atomically above.  Rebuild the bot
+            # from it so the API and trading worker become available again.
+            self._init(True)
+            self.freqtrade.notify_status("Runtime profile reload failed and was rolled back")
+        else:
+            mark_runtime_reload_success()
+            self.freqtrade.notify_status(f"{State(self.freqtrade.state)} after config reloaded")
 
         # Tell systemd that we completed reconfiguration
         self._notify("READY=1")
