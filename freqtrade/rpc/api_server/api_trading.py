@@ -20,6 +20,7 @@ from freqtrade.rpc.api_server.api_schemas import (
     ForceExitPayload,
     LeveragePayload,
     ListCustomData,
+    ShortEnabledPayload,
     Locks,
     LocksPayload,
     MixTag,
@@ -346,6 +347,14 @@ def reload_config(rpc: RPC = Depends(get_rpc)):
 def set_leverage(payload: LeveragePayload, rpc: RPC = Depends(get_rpc)):
     try:
         return rpc._rpc_set_leverage(payload.leverage)
+    except RPCException as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/short_enabled", response_model=StatusMsg, tags=["Bot-control"])
+def set_short_enabled(payload: ShortEnabledPayload, rpc: RPC = Depends(get_rpc)):
+    try:
+        return rpc._rpc_set_short_enabled(payload.enabled)
     except RPCException as e:
         raise HTTPException(status_code=400, detail=str(e))
 

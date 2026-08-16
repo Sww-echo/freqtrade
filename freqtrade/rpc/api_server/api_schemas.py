@@ -39,6 +39,10 @@ class LeveragePayload(BaseModel):
     leverage: float = Field(ge=1.0)
 
 
+class ShortEnabledPayload(BaseModel):
+    enabled: bool
+
+
 class BgJobStarted(StatusMsg):
     job_id: str
 
@@ -240,6 +244,7 @@ class ShowConfig(BaseModel):
     trading_mode: str
     margin_mode: str
     leverage: float = 1.0
+    short_enabled: bool = True
     short_allowed: bool
     stake_currency: str
     stake_amount: str

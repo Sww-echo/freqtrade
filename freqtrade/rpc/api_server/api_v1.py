@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 # 2.47: Add Strategy parameters
 # 2.48: add /backtest/history/wallets endpoint
 # 2.49: Add /lookahead_analysis and /recursive_analysis endpoints and background job deletion
-API_VERSION = 2.50
+API_VERSION = 2.51
 
 # Public API, requires no auth.
 router_public = APIRouter()

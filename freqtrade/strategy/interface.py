@@ -1373,6 +1373,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if (
             self.config.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT
             and self.can_short
+            and self.config.get("short_enabled", True)
             and enter_short == 1
             and not any([exit_short, enter_long])
         ):
