@@ -184,7 +184,11 @@ def _profile_for_definition(
             f"{definition['margin_mode'].value}"
         )
     return StrategyProfile(
-        **definition,
+        **{
+            key: value
+            for key, value in definition.items()
+            if key != "runtime_timeframes"
+        },
         timeframes=SUPPORTED_TIMEFRAMES,
         runtime_timeframes=definition["runtime_timeframes"],
         default_timeframe="5m",
