@@ -2689,6 +2689,33 @@ def test_api_strategies(botclient, tmp_path):
     }
 
 
+def test_api_strategy_profiles(botclient, mocker):
+    _ftbot, client = botclient
+    mocker.patch(
+        "freqtrade.rpc.api_server.strategy_profiles._available_strategy_names",
+        return_value={
+            "SampleStrategy",
+            "CryptoTrendBreakoutStrategy",
+            "CryptoTrendBreakoutLongShortStrategy",
+        },
+    )
+
+    rc = client_get(client, f"{BASE_URI}/strategy_profiles")
+
+    assert_response(rc)
+    profiles = rc.json()
+    assert [profile["id"] for profile in profiles] == [
+        "sample-spot",
+        "crypto-trend-long",
+        "crypto-trend-long-short",
+    ]
+    assert profiles[0]["compatible"] is True
+    assert profiles[1]["runtime_timeframes"] == ["5m"]
+    assert profiles[2]["supports_short"] is True
+    assert profiles[2]["compatible"] is False
+    assert "futures" in profiles[2]["compatibility_reason"]
+
+
 def test_api_strategy(botclient, tmp_path, mocker):
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path

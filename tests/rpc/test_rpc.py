@@ -958,6 +958,33 @@ def test_rpc_pause(mocker, default_conf) -> None:
     } == result
 
 
+def test_rpc_set_global_leverage(default_conf) -> None:
+    default_conf["trading_mode"] = TradingMode.FUTURES
+    default_conf["margin_mode"] = "isolated"
+    default_conf["exchange"]["max_leverage"] = 5
+    freqtradebot = MagicMock()
+    freqtradebot.config = default_conf
+    rpc = RPC(freqtradebot)
+
+    result = rpc._rpc_set_leverage(3)
+
+    assert result["leverage"] == 3
+    assert freqtradebot.config["leverage"] == 3
+
+    for invalid in (float("nan"), float("inf"), 0.5, 6):
+        with pytest.raises(RPCException):
+            rpc._rpc_set_leverage(invalid)
+
+
+def test_rpc_set_global_leverage_rejects_spot(default_conf) -> None:
+    freqtradebot = MagicMock()
+    freqtradebot.config = default_conf
+    rpc = RPC(freqtradebot)
+
+    with pytest.raises(RPCException, match="only available in futures mode"):
+        rpc._rpc_set_leverage(2)
+
+
 def test_rpc_force_exit(default_conf, ticker, fee, mocker) -> None:
     mocker.patch("freqtrade.rpc.telegram.Telegram", MagicMock())
 

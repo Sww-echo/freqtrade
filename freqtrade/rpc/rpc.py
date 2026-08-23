@@ -3,6 +3,7 @@ This module contains class to define a RPC communications
 """
 
 import logging
+import math
 from abc import abstractmethod
 from collections.abc import Generator, Sequence
 from datetime import UTC, date, datetime, timedelta
@@ -994,6 +995,15 @@ class RPC:
         """Set the global leverage for new futures entries."""
         if self._freqtrade.config.get("trading_mode", TradingMode.SPOT) != TradingMode.FUTURES:
             raise RPCException("Global leverage is only available in futures mode.")
+        if not math.isfinite(leverage) or leverage < 1.0:
+            raise RPCException("Global leverage must be a finite number of at least 1x.")
+        max_leverage = float(
+            self._freqtrade.config.get("exchange", {}).get(
+                "max_leverage", self._freqtrade.config.get("max_leverage", 125)
+            )
+        )
+        if leverage > max_leverage:
+            raise RPCException(f"Global leverage cannot exceed {max_leverage:g}x.")
         self._freqtrade.config["leverage"] = float(leverage)
         return {
             "status": f"Global leverage set to {leverage:g}x for new entries.",

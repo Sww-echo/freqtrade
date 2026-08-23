@@ -182,7 +182,11 @@ freqtrade backtesting --config user_data/config.json \
 
 回测至少应跨越上涨、下跌和震荡三个市场阶段，并计入实际手续费、滑点和交易所最小下单额。通过后，先使用 `--dry-run --strategy CryptoTrendBreakoutStrategy` 观察数周；只有在干跑结果、交易频率、最大回撤和日志行为均符合预期时，再考虑实盘。
 
-当前 `docker-compose.yml` 的命令行仍固定为 `--strategy SampleStrategy`，这是刻意保留的安全默认值。准备启用时，将其中的策略名改为 `CryptoTrendBreakoutStrategy`，然后仅重启容器；策略文件在 `./user_data` 挂载目录中，不需要在云服务器构建镜像。
+当前 `docker-compose.yml` 会依次加载 `user_data/config.json` 和
+`runtime/active-profile.json`。默认运行时档案选择
+`CryptoTrendBreakoutStrategy` 与 `5m`；前端应用策略档案后会原子更新第二个文件并请求机器人重载。不要再在 Compose 命令中追加固定的
+`--strategy`，否则命令行参数会掩盖运行时档案，造成前端显示和实际运行不一致。策略文件位于挂载的
+`./user_data/strategies`，运行时档案位于挂载的 `./runtime`。
 
 ## 6. 后续迭代建议
 
@@ -239,3 +243,19 @@ freqtrade backtesting --config user_data/config.json \
 ```
 
 建议先使用逐仓 2 倍，并在开启实盘前重新下载合约 K 线、计入资金费率和手续费完成回测。`stoploss` 是按杠杆后的交易盈亏比例生效的，杠杆越高，同样的价格波动对保证金的影响越大。
+
+## 10. 当前前端能力与运行模式限制
+
+- `trade` / `dry_run` 模式：图表跟随机器人正在运行的策略和周期。可以选择日期范围，但不能在图表页临时切换策略或 K 线周期。
+- `webserver` 模式：用于研究、下载数据和历史图表，可以在图表页选择已批准策略、`1m`、`3m`、`5m`、`15m`、`30m`、`1h` 周期及日期范围。
+- 策略实际运行周期目前仍限制为 `5m`。图表支持多个周期不代表交易机器人可以热切换到这些周期。
+- 生产环境建议让交易容器继续运行 `trade`，另启独立的 `webserver` 容器做研究，避免图表操作干扰正在运行的交易实例。
+
+仓库中的可选 `research` Compose profile 已提供独立 Webserver，普通
+`docker compose up -d` 不会启动它，也不会改变现有交易容器：
+
+```bash
+docker compose --profile research up -d freqtrade-webserver
+```
+
+Webserver 在宿主机监听 `127.0.0.1:8081`。若需要从公网前端访问，应通过已有反向代理配置单独的受保护入口；不要直接把 8081 端口暴露到公网。前端需要将它作为第二个机器人/API 实例添加，进入该实例的图表页后才能使用策略与周期选择。
