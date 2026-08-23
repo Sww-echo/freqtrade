@@ -10,7 +10,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import HTTPException
 
@@ -35,13 +35,14 @@ SUPPORTED_TIMEFRAMES = ["1m", "3m", "5m", "15m", "30m", "1h"]
 RUNTIME_TIMEFRAMES = ["5m"]
 _RUNTIME_APPLY_LOCK = RLock()
 _RUNTIME_RELOAD_STATUS_LOCK = RLock()
+ReloadStatus = Literal["idle", "pending", "succeeded", "failed"]
 
 
 @dataclass
 class _RuntimeReload:
     path: Path
     previous: bytes | None
-    status: str = "pending"
+    status: ReloadStatus = "pending"
     error: str | None = None
 
 
@@ -80,7 +81,7 @@ def _begin_runtime_reload(path: Path, previous: bytes | None) -> None:
         _runtime_reload = _RuntimeReload(path=path, previous=previous)
 
 
-def runtime_reload_status() -> tuple[str, str | None]:
+def runtime_reload_status() -> tuple[ReloadStatus, str | None]:
     with _RUNTIME_RELOAD_STATUS_LOCK:
         if _runtime_reload is None:
             return "idle", None
