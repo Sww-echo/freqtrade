@@ -1016,9 +1016,7 @@ class RPC:
             raise RPCException("Automatic short entries are only available in futures mode.")
         self._freqtrade.config["short_enabled"] = enabled
         return {
-            "status": (
-                "New short entries enabled." if enabled else "New short entries disabled."
-            ),
+            "status": ("New short entries enabled." if enabled else "New short entries disabled."),
             "short_enabled": enabled,
         }
 

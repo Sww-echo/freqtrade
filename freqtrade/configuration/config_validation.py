@@ -112,10 +112,7 @@ def _validate_leverage(conf: dict[str, Any]) -> None:
         raise ConfigurationError("`leverage` must be a finite number.")
     if leverage < 1.0:
         raise ConfigurationError("`leverage` must be greater than or equal to 1.0.")
-    if (
-        conf.get("trading_mode", TradingMode.SPOT) != TradingMode.FUTURES
-        and leverage != 1.0
-    ):
+    if conf.get("trading_mode", TradingMode.SPOT) != TradingMode.FUTURES and leverage != 1.0:
         raise ConfigurationError("`leverage` above 1.0 is only available in futures mode.")
 
 

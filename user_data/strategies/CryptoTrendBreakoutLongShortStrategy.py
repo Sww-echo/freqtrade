@@ -4,11 +4,9 @@ This strategy extends the long-only implementation with independently
 confirmed short breakdown signals for futures dry-run/backtesting.
 """
 
-from pandas import DataFrame
-
-from technical import qtpylib
-
 from CryptoTrendBreakoutStrategy import CryptoTrendBreakoutStrategy
+from pandas import DataFrame
+from technical import qtpylib
 
 
 class CryptoTrendBreakoutLongShortStrategy(CryptoTrendBreakoutStrategy):
@@ -47,9 +45,8 @@ class CryptoTrendBreakoutLongShortStrategy(CryptoTrendBreakoutStrategy):
             & (dataframe["ema20_1h"] < dataframe["ema60_1h"])
             & (dataframe["ema20_slope_1h"] < 0)
         )
-        btc_downtrend = (
-            (dataframe["btc_close_1h"] < dataframe["btc_ema20_1h"])
-            & (dataframe["btc_ema20_1h"] < dataframe["btc_ema60_1h"])
+        btc_downtrend = (dataframe["btc_close_1h"] < dataframe["btc_ema20_1h"]) & (
+            dataframe["btc_ema20_1h"] < dataframe["btc_ema60_1h"]
         )
         breakdown = dataframe["close"] < dataframe["donchian_low_48"]
         volume_confirmation = dataframe["volume_ratio"] >= 1.20
@@ -83,12 +80,9 @@ class CryptoTrendBreakoutLongShortStrategy(CryptoTrendBreakoutStrategy):
         dataframe = super().populate_exit_trend(dataframe, metadata)
 
         channel_recovery = dataframe["close"] > dataframe["donchian_high_24"]
-        local_trend_recovery = qtpylib.crossed_above(
-            dataframe["ema20"], dataframe["ema60"]
-        )
-        higher_trend_recovery = (
-            (dataframe["close_1h"] > dataframe["ema20_1h"])
-            & (dataframe["rsi"] > 55)
+        local_trend_recovery = qtpylib.crossed_above(dataframe["ema20"], dataframe["ema60"])
+        higher_trend_recovery = (dataframe["close_1h"] > dataframe["ema20_1h"]) & (
+            dataframe["rsi"] > 55
         )
         dataframe.loc[
             (channel_recovery | local_trend_recovery | higher_trend_recovery)

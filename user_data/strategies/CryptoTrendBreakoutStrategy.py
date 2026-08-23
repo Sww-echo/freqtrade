@@ -5,14 +5,13 @@ trend-following, volume confirmation and Donchian-channel ideas.  It does not
 depend on the supplied stock-analysis application's code or external data APIs.
 """
 
-from pandas import DataFrame
-
 import talib.abstract as ta
+from pandas import DataFrame
+from technical import qtpylib
 
 from freqtrade.enums import TradingMode
 from freqtrade.exceptions import OperationalException
 from freqtrade.strategy import IStrategy, informative, merge_informative_pair
-from technical import qtpylib
 
 
 class CryptoTrendBreakoutStrategy(IStrategy):
@@ -113,9 +112,7 @@ class CryptoTrendBreakoutStrategy(IStrategy):
         btc_candle_type = "futures" if is_futures else "spot"
         btc_dataframe = self.dp.get_pair_dataframe(btc_pair, "1h", btc_candle_type)
         if btc_dataframe.empty:
-            raise OperationalException(
-                f"No 1h BTC informative data available for {btc_pair}."
-            )
+            raise OperationalException(f"No 1h BTC informative data available for {btc_pair}.")
         btc_dataframe["btc_close"] = btc_dataframe["close"]
         btc_dataframe["btc_ema20"] = ta.EMA(btc_dataframe, timeperiod=20)
         btc_dataframe["btc_ema60"] = ta.EMA(btc_dataframe, timeperiod=60)
@@ -135,9 +132,8 @@ class CryptoTrendBreakoutStrategy(IStrategy):
             & (dataframe["ema20_1h"] > dataframe["ema60_1h"])
             & (dataframe["ema20_slope_1h"] > 0)
         )
-        btc_trend = (
-            (dataframe["btc_close_1h"] > dataframe["btc_ema20_1h"])
-            & (dataframe["btc_ema20_1h"] > dataframe["btc_ema60_1h"])
+        btc_trend = (dataframe["btc_close_1h"] > dataframe["btc_ema20_1h"]) & (
+            dataframe["btc_ema20_1h"] > dataframe["btc_ema60_1h"]
         )
         breakout = dataframe["close"] > dataframe["donchian_high_48"]
         volume_confirmation = dataframe["volume_ratio"] >= 1.20
@@ -154,7 +150,12 @@ class CryptoTrendBreakoutStrategy(IStrategy):
         )
 
         dataframe.loc[
-            pair_trend & btc_trend & breakout & volume_confirmation & trend_confirmation & risk_guard,
+            pair_trend
+            & btc_trend
+            & breakout
+            & volume_confirmation
+            & trend_confirmation
+            & risk_guard,
             ["enter_long", "enter_tag"],
         ] = (1, "trend_breakout")
         return dataframe
@@ -163,9 +164,8 @@ class CryptoTrendBreakoutStrategy(IStrategy):
         """Leave when the short-term breakout fails or the higher trend breaks."""
         channel_failure = dataframe["close"] < dataframe["donchian_low_24"]
         local_trend_failure = qtpylib.crossed_below(dataframe["ema20"], dataframe["ema60"])
-        higher_trend_failure = (
-            (dataframe["close_1h"] < dataframe["ema20_1h"])
-            & (dataframe["rsi"] < 45)
+        higher_trend_failure = (dataframe["close_1h"] < dataframe["ema20_1h"]) & (
+            dataframe["rsi"] < 45
         )
 
         dataframe.loc[

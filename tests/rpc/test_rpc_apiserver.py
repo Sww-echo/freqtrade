@@ -2716,6 +2716,62 @@ def test_api_strategy_profiles(botclient, mocker):
     assert "futures" in profiles[2]["compatibility_reason"]
 
 
+def test_api_strategy_runtime_routes(botclient, mocker):
+    _ftbot, client = botclient
+    runtime = {
+        "profile_id": "crypto-trend-long",
+        "strategy": "CryptoTrendBreakoutStrategy",
+        "timeframe": "5m",
+        "trading_mode": "spot",
+        "margin_mode": "",
+        "leverage": None,
+        "short_enabled": False,
+        "open_trades": 0,
+        "open_orders": 0,
+        "can_apply": True,
+    }
+    mocker.patch("freqtrade.rpc.api_server.api_v1.current_runtime_settings", return_value=runtime)
+
+    rc = client_get(client, f"{BASE_URI}/runtime_settings")
+
+    assert_response(rc)
+    assert rc.json()["strategy"] == "CryptoTrendBreakoutStrategy"
+
+    preview = {
+        **runtime,
+        "profile": {
+            "id": "crypto-trend-long",
+            "strategy": "CryptoTrendBreakoutStrategy",
+            "display_name": "趋势突破做多 · 现货",
+            "trading_mode": "spot",
+            "margin_mode": "",
+            "timeframes": ["1m", "3m", "5m", "15m", "30m", "1h"],
+            "runtime_timeframes": ["5m"],
+            "default_timeframe": "5m",
+            "supports_short": False,
+            "leverage_allowed": False,
+            "compatible": True,
+        },
+    }
+    mocker.patch("freqtrade.rpc.api_server.api_v1.preview_runtime_settings", return_value=preview)
+    rc = client_post(
+        client,
+        f"{BASE_URI}/strategy_profiles/preview",
+        {"profile_id": "crypto-trend-long"},
+    )
+    assert_response(rc)
+    assert rc.json()["profile"]["id"] == "crypto-trend-long"
+
+    mocker.patch("freqtrade.rpc.api_server.api_v1.apply_runtime_settings", return_value=runtime)
+    rc = client_post(
+        client,
+        f"{BASE_URI}/strategy_profiles/apply",
+        {"profile_id": "crypto-trend-long"},
+    )
+    assert_response(rc)
+    assert rc.json()["profile_id"] == "crypto-trend-long"
+
+
 def test_api_strategy(botclient, tmp_path, mocker):
     ftbot, client = botclient
     ftbot.config["user_data_dir"] = tmp_path

@@ -209,9 +209,7 @@ def test_apply_runtime_settings_writes_atomically_and_requests_reload(mocker, tm
     rpc = MagicMock()
     rpc._freqtrade = ftbot
 
-    result = profiles.apply_runtime_settings(
-        StrategyProfilePayload(profile_id=profile.id), {}, rpc
-    )
+    result = profiles.apply_runtime_settings(StrategyProfilePayload(profile_id=profile.id), {}, rpc)
 
     written = json.loads(runtime_path.read_text(encoding="utf-8"))
     assert written == {

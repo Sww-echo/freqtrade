@@ -84,9 +84,7 @@ def pair_history_filtered(payload: PairHistoryRequest, config=Depends(get_config
 def chart_history(payload: PairHistoryRequest, config=Depends(get_config)):
     """Analyze historical candles for an approved strategy in Webserver mode."""
     if payload.timeframe not in SUPPORTED_TIMEFRAMES:
-        raise HTTPException(
-            status_code=422, detail=f"不支持的图表周期：{payload.timeframe}"
-        )
+        raise HTTPException(status_code=422, detail=f"不支持的图表周期: {payload.timeframe}")
     strategy_name = payload.strategy or config.get("strategy")
     verify_strategy(strategy_name)
     profile = next(

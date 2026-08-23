@@ -6,8 +6,8 @@ import json
 import logging
 import os
 import tempfile
-from dataclasses import dataclass
 from copy import deepcopy
+from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
 from typing import Any
@@ -55,10 +55,10 @@ def _atomic_write_bytes(path: Path, contents: bytes) -> None:
             handle.write(contents)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temp_name, path)
+        Path(temp_name).replace(path)
     except Exception:
         try:
-            os.unlink(temp_name)
+            Path(temp_name).unlink()
         except FileNotFoundError:
             pass
         raise
@@ -104,7 +104,7 @@ def rollback_runtime_reload(error: Exception | str) -> bool:
             _restore_runtime_profile(transaction.path, transaction.previous)
         except Exception as restore_error:
             transaction.status = "failed"
-            transaction.error = f"{error}; 恢复旧配置失败：{restore_error}"
+            transaction.error = f"{error}; 恢复旧配置失败: {restore_error}"
             logger.exception("Failed to restore runtime profile")
             return False
         transaction.status = "failed"
@@ -173,22 +173,14 @@ def _profile_for_definition(
         reason = "策略文件未挂载到当前机器人"
     elif definition["trading_mode"] != current_mode:
         compatible = False
-        reason = (
-            f"当前机器人是 {current_mode.value}，该配置需要 "
-            f"{definition['trading_mode'].value}"
-        )
+        reason = f"当前机器人是 {current_mode.value}, 该配置需要 {definition['trading_mode'].value}"
     elif definition["margin_mode"] != current_margin:
         compatible = False
         reason = (
-            f"当前保证金模式是 {current_margin.value}，该配置需要 "
-            f"{definition['margin_mode'].value}"
+            f"当前保证金模式是 {current_margin.value}, 该配置需要 {definition['margin_mode'].value}"
         )
     return StrategyProfile(
-        **{
-            key: value
-            for key, value in definition.items()
-            if key != "runtime_timeframes"
-        },
+        **{key: value for key, value in definition.items() if key != "runtime_timeframes"},
         timeframes=SUPPORTED_TIMEFRAMES,
         runtime_timeframes=definition["runtime_timeframes"],
         default_timeframe="5m",
@@ -200,8 +192,7 @@ def _profile_for_definition(
 def list_strategy_profiles(config: Config) -> list[StrategyProfile]:
     available_strategies = _available_strategy_names(config)
     return [
-        _profile_for_definition(item, config, available_strategies)
-        for item in PROFILE_DEFINITIONS
+        _profile_for_definition(item, config, available_strategies) for item in PROFILE_DEFINITIONS
     ]
 
 
@@ -239,9 +230,7 @@ def _active_profile_id(config: Config) -> str | None:
 
 def current_runtime_settings(config: Config, rpc: RPC) -> RuntimeSettings:
     strategy = rpc._freqtrade.strategy.get_strategy_name()
-    timeframe = str(
-        getattr(rpc._freqtrade.strategy, "timeframe", config.get("timeframe", "5m"))
-    )
+    timeframe = str(getattr(rpc._freqtrade.strategy, "timeframe", config.get("timeframe", "5m")))
     open_trades = len(Trade.get_open_trades())
     open_orders = len(Order.get_open_orders())
     reload_status, reload_error = runtime_reload_status()
@@ -256,11 +245,7 @@ def current_runtime_settings(config: Config, rpc: RPC) -> RuntimeSettings:
         open_trades=open_trades,
         open_orders=open_orders,
         can_apply=open_trades == 0 and open_orders == 0,
-        warning=(
-            "存在持仓或未完成订单时禁止切换策略"
-            if open_trades or open_orders
-            else None
-        ),
+        warning=("存在持仓或未完成订单时禁止切换策略" if open_trades or open_orders else None),
         reload_status=reload_status,
         reload_error=reload_error,
     )
@@ -276,9 +261,7 @@ def _validated_payload(
     if timeframe not in profile.runtime_timeframes:
         raise HTTPException(
             status_code=422,
-            detail=(
-                f"该策略当前仅允许交易周期：{', '.join(profile.runtime_timeframes)}"
-            ),
+            detail=(f"该策略当前仅允许交易周期: {', '.join(profile.runtime_timeframes)}"),
         )
     if payload.short_enabled and not profile.supports_short:
         raise HTTPException(status_code=422, detail="该策略不支持做空")
@@ -286,8 +269,7 @@ def _validated_payload(
         raise HTTPException(status_code=422, detail="该策略配置不支持杠杆")
     if (
         payload.leverage
-        and _as_trading_mode(config.get("trading_mode", TradingMode.SPOT))
-        != TradingMode.FUTURES
+        and _as_trading_mode(config.get("trading_mode", TradingMode.SPOT)) != TradingMode.FUTURES
     ):
         raise HTTPException(status_code=422, detail="杠杆只能用于期货模式")
     max_leverage = float(
@@ -297,9 +279,7 @@ def _validated_payload(
         raise HTTPException(status_code=422, detail=f"杠杆不能超过 {max_leverage:g}x")
     current = current_runtime_settings(config, rpc)
     if current.open_trades or current.open_orders:
-        raise HTTPException(
-            status_code=409, detail="存在持仓或未完成订单，请先处理后再切换"
-        )
+        raise HTTPException(status_code=409, detail="存在持仓或未完成订单, 请先处理后再切换")
     candidate = {
         "strategy": profile.strategy,
         "timeframe": timeframe,
@@ -317,7 +297,7 @@ def _validated_payload(
         validate_config_consistency(candidate_config)
         StrategyResolver.load_strategy(candidate_config)
     except Exception as exc:
-        raise HTTPException(status_code=422, detail=f"策略配置校验失败：{exc}") from exc
+        raise HTTPException(status_code=422, detail=f"策略配置校验失败: {exc}") from exc
     return profile, candidate, current
 
 
@@ -337,7 +317,7 @@ def preview_runtime_settings(
         open_trades=current.open_trades,
         open_orders=current.open_orders,
         can_apply=True,
-        warning="应用后机器人会重载配置，已有持仓时接口会拒绝操作",
+        warning="应用后机器人会重载配置, 已有持仓时接口会拒绝操作",
     )
 
 
@@ -353,9 +333,7 @@ def apply_runtime_settings(
         with rpc._freqtrade._entry_lock:
             previous_state = rpc._freqtrade.state
             if previous_state == State.RELOAD_CONFIG:
-                raise HTTPException(
-                    status_code=409, detail="机器人正在重载配置，请稍后再试"
-                )
+                raise HTTPException(status_code=409, detail="机器人正在重载配置, 请稍后再试")
             was_running = previous_state == State.RUNNING
             was_paused = previous_state == State.PAUSED
             if was_running or was_paused:
@@ -395,7 +373,7 @@ def apply_runtime_settings(
                     open_trades=0,
                     open_orders=0,
                     can_apply=True,
-                    warning="配置已写入，机器人正在重载",
+                    warning="配置已写入, 机器人正在重载",
                     reload_status="pending",
                 )
             except Exception:
