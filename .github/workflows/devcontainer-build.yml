@@ -23,6 +23,8 @@ permissions:
 jobs:
   build-and-push:
     name: "Build and Push Devcontainer Image"
+    # The devcontainer package is maintained only in the upstream repository.
+    if: github.repository == 'freqtrade/freqtrade'
     permissions:
       packages: write  # Needed to push package versions
     runs-on: ubuntu-latest

@@ -18,6 +18,8 @@ from freqtrade.rpc.api_server.api_schemas import (
     ForceEnterPayload,
     ForceEnterResponse,
     ForceExitPayload,
+    LeveragePayload,
+    LeverageResponse,
     ListCustomData,
     Locks,
     LocksPayload,
@@ -29,6 +31,8 @@ from freqtrade.rpc.api_server.api_schemas import (
     Profit,
     ProfitAll,
     ResultMsg,
+    ShortEnabledPayload,
+    ShortEnabledResponse,
     Stats,
     StatusMsg,
     WalletHistoryResponse,
@@ -339,6 +343,22 @@ def pause(rpc: RPC = Depends(get_rpc)):
 @router.post("/reload_config", response_model=StatusMsg, tags=["Bot-control"])
 def reload_config(rpc: RPC = Depends(get_rpc)):
     return rpc._rpc_reload_config()
+
+
+@router.post("/leverage", response_model=LeverageResponse, tags=["Bot-control"])
+def set_leverage(payload: LeveragePayload, rpc: RPC = Depends(get_rpc)):
+    try:
+        return rpc._rpc_set_leverage(payload.leverage)
+    except RPCException as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/short_enabled", response_model=ShortEnabledResponse, tags=["Bot-control"])
+def set_short_enabled(payload: ShortEnabledPayload, rpc: RPC = Depends(get_rpc)):
+    try:
+        return rpc._rpc_set_short_enabled(payload.enabled)
+    except RPCException as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/pair_candles", response_model=PairHistory, tags=["Candle data"])

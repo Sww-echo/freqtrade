@@ -17,7 +17,11 @@ from freqtrade.rpc.api_server.api_schemas import (
     MarketResponse,
     Ping,
     PlotConfig,
+    RuntimeSettings,
     ShowConfig,
+    StrategyProfile,
+    StrategyProfilePayload,
+    StrategyProfilePreview,
     StrategyResponse,
     SysInfo,
     Version,
@@ -28,6 +32,12 @@ from freqtrade.rpc.api_server.deps import (
     get_rpc,
     get_rpc_optional,
     verify_strategy,
+)
+from freqtrade.rpc.api_server.strategy_profiles import (
+    apply_runtime_settings,
+    current_runtime_settings,
+    list_strategy_profiles,
+    preview_runtime_settings,
 )
 from freqtrade.rpc.rpc import RPCException
 
@@ -71,7 +81,8 @@ logger = logging.getLogger(__name__)
 # 2.47: Add Strategy parameters
 # 2.48: add /backtest/history/wallets endpoint
 # 2.49: Add /lookahead_analysis and /recursive_analysis endpoints and background job deletion
-API_VERSION = 2.49
+# 2.52: Add strategy profiles and guarded runtime controls
+API_VERSION = 2.52
 
 # Public API, requires no auth.
 router_public = APIRouter()
@@ -93,6 +104,43 @@ def ping():
 def version():
     """Bot Version info"""
     return {"version": __version__}
+
+
+@router.get("/strategy_profiles", response_model=list[StrategyProfile], tags=["Strategy"])
+def strategy_profiles(config=Depends(get_config)):
+    """List approved strategy profiles in both trading and Webserver modes."""
+    return list_strategy_profiles(config)
+
+
+@router.get("/runtime_settings", response_model=RuntimeSettings, tags=["Bot-control"])
+def runtime_settings(config=Depends(get_config), rpc: RPC = Depends(get_rpc)):
+    return current_runtime_settings(config, rpc)
+
+
+@router.post(
+    "/strategy_profiles/preview",
+    response_model=StrategyProfilePreview,
+    tags=["Bot-control"],
+)
+def preview_strategy_profile(
+    payload: StrategyProfilePayload,
+    config=Depends(get_config),
+    rpc: RPC = Depends(get_rpc),
+):
+    return preview_runtime_settings(payload, config, rpc)
+
+
+@router.post(
+    "/strategy_profiles/apply",
+    response_model=RuntimeSettings,
+    tags=["Bot-control"],
+)
+def apply_strategy_profile(
+    payload: StrategyProfilePayload,
+    config=Depends(get_config),
+    rpc: RPC = Depends(get_rpc),
+):
+    return apply_runtime_settings(payload, config, rpc)
 
 
 @router.get("/show_config", response_model=ShowConfig, tags=["Info"])

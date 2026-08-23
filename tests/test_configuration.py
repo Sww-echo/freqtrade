@@ -677,6 +677,21 @@ def test_validate_max_open_trades(default_conf):
         validate_config_consistency(default_conf)
 
 
+@pytest.mark.parametrize("leverage", [float("nan"), float("inf")])
+def test_validate_leverage_must_be_finite(default_conf, leverage):
+    default_conf["leverage"] = leverage
+
+    with pytest.raises(ConfigurationError, match="must be a finite number"):
+        validate_config_consistency(default_conf)
+
+
+def test_validate_leverage_above_one_requires_futures(default_conf):
+    default_conf["leverage"] = 2
+
+    with pytest.raises(ConfigurationError, match="only available in futures mode"):
+        validate_config_consistency(default_conf)
+
+
 def test_validate_price_side(default_conf):
     default_conf["order_types"] = {
         "entry": "limit",

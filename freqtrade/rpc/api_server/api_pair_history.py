@@ -7,6 +7,7 @@ from freqtrade.configuration import validate_config_consistency
 from freqtrade.rpc.api_server.api_pairlists import handleExchangePayload
 from freqtrade.rpc.api_server.api_schemas import PairHistory, PairHistoryRequest
 from freqtrade.rpc.api_server.deps import get_config, get_exchange, verify_strategy
+from freqtrade.rpc.api_server.strategy_profiles import SUPPORTED_TIMEFRAMES, list_strategy_profiles
 from freqtrade.rpc.rpc import RPC
 
 
@@ -77,3 +78,45 @@ def pair_history_filtered(payload: PairHistoryRequest, config=Depends(get_config
     except Exception as e:
         logger.exception("Error in pair_history_filtered")
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/chart_history", response_model=PairHistory, tags=["Candle data"])
+def chart_history(payload: PairHistoryRequest, config=Depends(get_config)):
+    """Analyze historical candles for an approved strategy in Webserver mode."""
+    if payload.timeframe not in SUPPORTED_TIMEFRAMES:
+        raise HTTPException(status_code=422, detail=f"不支持的图表周期: {payload.timeframe}")
+    strategy_name = payload.strategy or config.get("strategy")
+    verify_strategy(strategy_name)
+    profile = next(
+        (
+            profile
+            for profile in list_strategy_profiles(config)
+            if profile.strategy == strategy_name
+        ),
+        None,
+    )
+    if profile is None or not profile.compatible:
+        raise HTTPException(status_code=409, detail="策略未在当前机器人模式中启用")
+    config_loc = deepcopy(config)
+    handleExchangePayload(payload, config_loc)
+    config_loc.update(
+        {
+            "timeframe": payload.timeframe,
+            "strategy": strategy_name,
+            "timerange": payload.timerange,
+        }
+    )
+    validate_config_consistency(config_loc)
+    exchange = get_exchange(config_loc)
+    try:
+        return RPC._rpc_analysed_history_full(
+            config_loc,
+            payload.pair,
+            payload.timeframe,
+            exchange,
+            payload.columns,
+            payload.live_mode,
+        )
+    except Exception as exc:
+        logger.exception("Error in chart_history")
+        raise HTTPException(status_code=502, detail=str(exc)) from exc

@@ -845,7 +845,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         :param side: 'long' or 'short' - indicating the direction of the proposed trade
         :return: A leverage amount, which is between 1.0 and max_leverage.
         """
-        return 1.0
+        return float(self.config.get("leverage", 1.0))
 
     def informative_pairs(self) -> ListPairsWithTimeframes:
         """
@@ -1373,6 +1373,7 @@ class IStrategy(ABC, HyperStrategyMixin):
         if (
             self.config.get("trading_mode", TradingMode.SPOT) != TradingMode.SPOT
             and self.can_short
+            and self.config.get("short_enabled", True)
             and enter_short == 1
             and not any([exit_short, enter_long])
         ):

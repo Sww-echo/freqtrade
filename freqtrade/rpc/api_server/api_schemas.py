@@ -35,6 +35,64 @@ class StatusMsg(BaseModel):
     status: str
 
 
+class LeveragePayload(BaseModel):
+    leverage: float = Field(ge=1.0)
+
+
+class LeverageResponse(StatusMsg):
+    leverage: float
+
+
+class ShortEnabledPayload(BaseModel):
+    enabled: bool
+
+
+class ShortEnabledResponse(StatusMsg):
+    short_enabled: bool
+
+
+class StrategyProfile(BaseModel):
+    id: str
+    strategy: str
+    display_name: str
+    trading_mode: TradingMode
+    margin_mode: MarginMode
+    timeframes: list[str]
+    runtime_timeframes: list[str]
+    default_timeframe: str
+    supports_short: bool
+    leverage_allowed: bool
+    compatible: bool
+    compatibility_reason: str | None = None
+
+
+class RuntimeSettings(BaseModel):
+    profile_id: str | None = None
+    strategy: str
+    timeframe: str
+    trading_mode: TradingMode
+    margin_mode: MarginMode
+    leverage: float | None = None
+    short_enabled: bool
+    open_trades: int
+    can_apply: bool
+    open_orders: int = 0
+    warning: str | None = None
+    reload_status: Literal["idle", "pending", "succeeded", "failed"] = "idle"
+    reload_error: str | None = None
+
+
+class StrategyProfilePayload(BaseModel):
+    profile_id: str
+    timeframe: str | None = None
+    leverage: float | None = Field(default=None, ge=1.0)
+    short_enabled: bool | None = None
+
+
+class StrategyProfilePreview(RuntimeSettings):
+    profile: StrategyProfile
+
+
 class BgJobStarted(StatusMsg):
     job_id: str
 
@@ -235,6 +293,8 @@ class ShowConfig(BaseModel):
     dry_run: bool
     trading_mode: str
     margin_mode: str
+    leverage: float = 1.0
+    short_enabled: bool = True
     short_allowed: bool
     stake_currency: str
     stake_amount: str

@@ -3,6 +3,7 @@ This module contains class to define a RPC communications
 """
 
 import logging
+import math
 from abc import abstractmethod
 from collections.abc import Generator, Sequence
 from datetime import UTC, date, datetime, timedelta
@@ -147,6 +148,8 @@ class RPC:
             "dry_run": config["dry_run"],
             "trading_mode": config.get("trading_mode", "spot"),
             "margin_mode": config.get("margin_mode", ""),
+            "leverage": float(config.get("leverage", 1.0)),
+            "short_enabled": bool(config.get("short_enabled", True)),
             "short_allowed": config.get("trading_mode", "spot") != "spot",
             "stake_currency": config["stake_currency"],
             "stake_currency_decimals": decimals_per_coin(config["stake_currency"]),
@@ -987,6 +990,35 @@ class RPC:
         """Handler for reload_config."""
         self._freqtrade.state = State.RELOAD_CONFIG
         return {"status": "Reloading config ..."}
+
+    def _rpc_set_leverage(self, leverage: float) -> dict[str, str | float]:
+        """Set the global leverage for new futures entries."""
+        if self._freqtrade.config.get("trading_mode", TradingMode.SPOT) != TradingMode.FUTURES:
+            raise RPCException("Global leverage is only available in futures mode.")
+        if not math.isfinite(leverage) or leverage < 1.0:
+            raise RPCException("Global leverage must be a finite number of at least 1x.")
+        max_leverage = float(
+            self._freqtrade.config.get("exchange", {}).get(
+                "max_leverage", self._freqtrade.config.get("max_leverage", 125)
+            )
+        )
+        if leverage > max_leverage:
+            raise RPCException(f"Global leverage cannot exceed {max_leverage:g}x.")
+        self._freqtrade.config["leverage"] = float(leverage)
+        return {
+            "status": f"Global leverage set to {leverage:g}x for new entries.",
+            "leverage": float(leverage),
+        }
+
+    def _rpc_set_short_enabled(self, enabled: bool) -> dict[str, str | bool]:
+        """Enable or disable new short entries globally."""
+        if self._freqtrade.config.get("trading_mode", TradingMode.SPOT) != TradingMode.FUTURES:
+            raise RPCException("Automatic short entries are only available in futures mode.")
+        self._freqtrade.config["short_enabled"] = enabled
+        return {
+            "status": ("New short entries enabled." if enabled else "New short entries disabled."),
+            "short_enabled": enabled,
+        }
 
     def _rpc_pause(self) -> dict[str, str]:
         """

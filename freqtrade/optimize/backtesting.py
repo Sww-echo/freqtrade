@@ -1067,17 +1067,24 @@ class Backtesting:
 
             max_leverage = self.exchange.get_max_leverage(pair, stake_amount)
             leverage = (
-                strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
-                    pair=pair,
-                    current_time=current_time,
-                    current_rate=row[OPEN_IDX],
-                    proposed_leverage=1.0,
-                    max_leverage=max_leverage,
-                    side=direction,
-                    entry_tag=entry_tag,
+                float(self.config["leverage"])
+                if (
+                    self.trading_mode != TradingMode.SPOT
+                    and self.config.get("leverage") is not None
                 )
-                if self.trading_mode != TradingMode.SPOT
-                else 1.0
+                else (
+                    strategy_safe_wrapper(self.strategy.leverage, default_retval=1.0)(
+                        pair=pair,
+                        current_time=current_time,
+                        current_rate=row[OPEN_IDX],
+                        proposed_leverage=1.0,
+                        max_leverage=max_leverage,
+                        side=direction,
+                        entry_tag=entry_tag,
+                    )
+                    if self.trading_mode != TradingMode.SPOT
+                    else 1.0
+                )
             )
             # Cap leverage between 1.0 and max_leverage.
             leverage = min(max(leverage, 1.0), max_leverage)

@@ -20,6 +20,8 @@ jobs:
     permissions:
       contents: write  #  for mike to push
     name: Deploy Docs through mike
+    # The Fork does not own the upstream gh-pages branch.
+    if: github.repository == 'freqtrade/freqtrade'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
