@@ -257,6 +257,8 @@ jobs:
   build-linux-online:
     # Run pytest with "live" checks
     name: "Online / live tests"
+    # Forks do not have the upstream Binance network/proxy guarantees.
+    if: github.repository == 'freqtrade/freqtrade'
     runs-on: ubuntu-24.04
     strategy:
       matrix:
